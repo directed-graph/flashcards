@@ -27,11 +27,23 @@ function loadData(csvData, keyColumns) {
   };
 }
 
+function addItemToFlashcard(items, id='#flashcard-list') {
+  $(id).empty();
+
+  for (item of items) {
+    $(id).append(
+      $('<li>')
+        .addClass('list-group-item')
+        .append(item));
+  }
+}
+
 function flipCard(data, keys, key) {
   $('#next-btn').off('click');
-  var column = data[key.toString()];
+  var columns = data[key.toString()];
 
-  console.log({column});
+  console.log({columns});
+  addItemToFlashcard(columns);
 
   $('#next-btn').html('Next');
   $('#next-btn').on('click', function() {
@@ -45,6 +57,7 @@ function chooseAndDisplayCard(data, keys) {
   var keyColumn = key[Math.floor(Math.random() * key.length)];
 
   console.log({keyColumn});
+  addItemToFlashcard([keyColumn]);
 
   $('#next-btn').html('Flip');
   $('#next-btn').on('click', function() {
@@ -65,11 +78,12 @@ $(document).ready(function() {
   $('#next-btn').on('click', function() {
     var {data, keys} = loadData($('#csv-data').val(), $('#key-columns').val());
     console.log({data, keys});
+
     $('#next-btn').off('click');
     $('#next-btn').html('Next');
     // This is a fairly primitive way of handling state. However, since we only
     // have three states (one of which only happens once), let's just do it the
-    // primitive way (i.e. "continuation" style).
+    // primitive way (i.e. "continuation-passing" style).
     $('#next-btn').on('click', function() {
       chooseAndDisplayCard(data, keys);
     });
