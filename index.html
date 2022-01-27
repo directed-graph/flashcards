@@ -8,6 +8,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
   <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+  <script src="https://apis.google.com/js/api.js"></script>
   <script type="text/javascript" src="./script.js"></script>
 </head>
 <body>
@@ -45,13 +46,18 @@
         </div>
         <div class="modal-body">
           <p>
-            Provide the input CSV data, and choose the column(s) to use as
-            keys. Columns start from 0 and should be separated by comma.
+            Provide the input sheet or CSV data, and choose the column(s) to
+            use as keys. The sheet must be publicly accessible. Columns start
+            from 0 and should be separated by commas.
           </p>
           <p>
             Refresh the page to reload data.
           </p>
           <form>
+            <div class="form-group">
+              <label for="sheet-id" class="col-form-label">Spreadsheet ID</label>
+              <input type="text" class="form-control" id="sheet-id" />
+            </div>
             <div class="form-group">
               <label for="key-columns" class="col-form-label">Key Columns</label>
               <textarea class="form-control" id="key-columns"></textarea>

@@ -1,30 +1,34 @@
 
-function loadData(csvData, keyColumns) {
-  // Maps keys to each row.
-  var data = {}
+// API key is public, but restricted to domain.
+const SHEETS_API_KEY = 'AIzaSyDTA94TIL0ajcLOkBbsIdKKZ7IqambgVWU';
+const SHEETS_API_URL = 'https://sheets.googleapis.com/$discovery/rest?version=v4';
+const MAX_RANGE = '1:10000';
 
-  // Array of all keys. Each element is an array of the key for a single row.
-  var keys = [];
+async function getSheetData(sheetId, range) {
+    let results = await gapi.client.sheets.spreadsheets.values.get({
+        spreadsheetId: sheetId,
+        range: range,
+    });
+    return results.result.values;
+}
 
-  var keyColumnsSet = new Set(keyColumns.split(','));
+function parseRawData(rawData, keyColumns) {
+  let data = {}
+  let keys = [];
+  let keyColumnsSet = new Set(keyColumns.split(','));
 
-  // Very naive parser. This does not handle commas in values or CSV with
-  // non-uniform row lengths.
-  for (row of csvData.split('\n')) {
-    var rowKey = [];
-    var columns = row.split(',');
-    for ([index, column] of Object.entries(columns)) {
+  for (let row of rawData) {
+    let rowKey = [];
+    for ([index, column] of Object.entries(row)) {
       if (keyColumnsSet.has(index)) {
         rowKey.push(column);
       }
     }
-    data[rowKey.toString()] = columns;
+    data[rowKey.toString()] = row;
     keys.push(rowKey);
   }
-  return {
-    data: data,
-    keys: keys,
-  };
+
+  return { data, keys, };
 }
 
 function addItemToFlashcard(items, id='#flashcard-list') {
@@ -40,7 +44,7 @@ function addItemToFlashcard(items, id='#flashcard-list') {
 
 function flipCard(data, keys, key) {
   $('#next-btn').off('click');
-  var columns = data[key.toString()];
+  let columns = data[key.toString()];
 
   console.log({columns});
   addItemToFlashcard(columns);
@@ -53,8 +57,8 @@ function flipCard(data, keys, key) {
 
 function chooseAndDisplayCard(data, keys) {
   $('#next-btn').off('click');
-  var key = keys[Math.floor(Math.random() * keys.length)];
-  var keyColumn = key[Math.floor(Math.random() * key.length)];
+  let key = keys[Math.floor(Math.random() * keys.length)];
+  let keyColumn = key[Math.floor(Math.random() * key.length)];
 
   console.log({keyColumn});
   addItemToFlashcard([keyColumn]);
@@ -65,18 +69,43 @@ function chooseAndDisplayCard(data, keys) {
   });
 }
 
-$(document).ready(function() {
+function initialize(sheetsEnabled=true) {
   if (typeof(Storage) !== 'undefined') {
+    $('#sheet-id').val(localStorage.getItem('sheet-id') || '');
     $('#csv-data').val(localStorage.getItem('csv-data') || '');
     $('#key-columns').val(localStorage.getItem('key-columns') || '');
 
     $('#save-btn').on('click', function() {
+      localStorage.setItem('sheet-id', $('#sheet-id').val());
       localStorage.setItem('csv-data', $('#csv-data').val());
       localStorage.setItem('key-columns', $('#key-columns').val());
     });
   }
-  $('#next-btn').on('click', function() {
-    var {data, keys} = loadData($('#csv-data').val(), $('#key-columns').val());
+
+  if (!sheetsEnabled) {
+    $('#sheet-id').val('');
+    $('#sheet-id').prop('disabled', true);
+  }
+
+  $('#next-btn').on('click', async function() {
+    let data;
+    let keys;
+    let sheetId = $('#sheet-id').val();
+    let keyColumns = $('#key-columns').val();
+    let csvData =$('#csv-data').val();
+
+    if (sheetId) {
+      ({data, keys} = parseRawData(await getSheetData(sheetId, MAX_RANGE),
+                                   keyColumns));
+    } else if (csvData) {
+      // EXTREMELY naive CSV parser. But since it only runs locally...
+      ({data, keys} = parseRawData(csvData.split('\n').map(c => c.split(',')),
+                                   keyColumns));
+    } else {
+      $('#configure-btn').click();
+      return;
+    }
+
     console.log({data, keys});
 
     $('#next-btn').off('click');
@@ -88,5 +117,17 @@ $(document).ready(function() {
       chooseAndDisplayCard(data, keys);
     });
     $('#next-btn').click();
+  });
+}
+
+$(document).ready(function() {
+  gapi.load('client', function() {
+      gapi.client.setApiKey(SHEETS_API_KEY);
+      gapi.client.load(SHEETS_API_URL)
+          .then(initialize,
+              (err) => {
+                console.error('Error loading GAPI client', err);
+                initialize(false);
+              });
   });
 });
