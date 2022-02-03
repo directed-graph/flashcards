@@ -1,7 +1,6 @@
 // API key is public, but restricted to domain.
 const SHEETS_API_KEY = 'AIzaSyDTA94TIL0ajcLOkBbsIdKKZ7IqambgVWU';
 const SHEETS_API_URL = 'https://sheets.googleapis.com/$discovery/rest?version=v4';
-const MAX_RANGE = '1:10000';
 
 async function getSheetData(sheetId, range) {
     let results = await gapi.client.sheets.spreadsheets.values.get({
@@ -78,11 +77,13 @@ function chooseAndDisplayCard(data, keys) {
 function initialize(sheetsEnabled = true) {
     if (typeof(Storage) !== 'undefined') {
         $('#sheet-id').val(localStorage.getItem('sheet-id') || '');
+        $('#sheet-range').val(localStorage.getItem('sheet-range') || '1:10000');
         $('#csv-data').val(localStorage.getItem('csv-data') || '');
         $('#key-columns').val(localStorage.getItem('key-columns') || '');
 
         $('#save-btn').on('click', function() {
             localStorage.setItem('sheet-id', $('#sheet-id').val());
+            localStorage.setItem('sheet-range', $('#sheet-range').val());
             localStorage.setItem('csv-data', $('#csv-data').val());
             localStorage.setItem('key-columns', $('#key-columns').val());
         });
@@ -91,12 +92,15 @@ function initialize(sheetsEnabled = true) {
     if (!sheetsEnabled) {
         $('#sheet-id').val('');
         $('#sheet-id').prop('disabled', true);
+        $('#sheet-range').val('');
+        $('#sheet-range').prop('disabled', true);
     }
 
     $('#next-btn').on('click', async function() {
         let data;
         let keys;
         let sheetId = $('#sheet-id').val();
+        let sheetRange = $('#sheet-range').val();
         let keyColumns = $('#key-columns').val();
         let csvData = $('#csv-data').val();
 
@@ -104,7 +108,7 @@ function initialize(sheetsEnabled = true) {
             ({
                 data,
                 keys
-            } = parseRawData(await getSheetData(sheetId, MAX_RANGE),
+            } = parseRawData(await getSheetData(sheetId, sheetRange),
                 keyColumns));
         } else if (csvData) {
             // EXTREMELY naive CSV parser. But since it only runs locally...
