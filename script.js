@@ -2,6 +2,34 @@
 const SHEETS_API_KEY = 'AIzaSyDTA94TIL0ajcLOkBbsIdKKZ7IqambgVWU';
 const SHEETS_API_URL = 'https://sheets.googleapis.com/$discovery/rest?version=v4';
 
+let State = class {
+    constructor(data, keys) {
+        this.data = data;
+        this.keys = keys;
+        this.setNext();
+    }
+
+    setNext() {
+        this.currentKeyIndex = Math.floor(Math.random() * this.keys.length);
+    }
+
+    getCurrent() {
+        let key = this.keys[this.currentKeyIndex];
+        let keyColumn = key[Math.floor(Math.random() * key.length)];
+        let columns = this.data[key.toString()];
+        return {
+            key,
+            keyColumn,
+            columns
+        }
+    }
+
+    getNext() {
+        this.setNext();
+        return this.getCurrent();
+    }
+}
+
 async function getSheetData(sheetId, range) {
     let results = await gapi.client.sheets.spreadsheets.values.get({
         spreadsheetId: sheetId,
@@ -43,10 +71,12 @@ function addItemToFlashcard(items, id = '#flashcard-list') {
     }
 }
 
-function flipCard(data, keys, key) {
+function flipCard(state) {
     $('#next-btn').off('click');
-    let columns = data[key.toString()];
 
+    let {
+        columns
+    } = state.getCurrent();
     console.log({
         columns
     });
@@ -54,15 +84,16 @@ function flipCard(data, keys, key) {
 
     $('#next-btn').html('Next');
     $('#next-btn').on('click', function() {
-        chooseAndDisplayCard(data, keys);
+        chooseAndDisplayCard(state);
     });
 }
 
-function chooseAndDisplayCard(data, keys) {
+function chooseAndDisplayCard(state) {
     $('#next-btn').off('click');
-    let key = keys[Math.floor(Math.random() * keys.length)];
-    let keyColumn = key[Math.floor(Math.random() * key.length)];
 
+    let {
+        keyColumn
+    } = state.getNext();
     console.log({
         keyColumn
     });
@@ -70,7 +101,7 @@ function chooseAndDisplayCard(data, keys) {
 
     $('#next-btn').html('Flip');
     $('#next-btn').on('click', function() {
-        flipCard(data, keys, key);
+        flipCard(state);
     });
 }
 
@@ -133,7 +164,7 @@ function initialize(sheetsEnabled = true) {
         // have three states (one of which only happens once), let's just do it the
         // primitive way (i.e. "continuation-passing" style).
         $('#next-btn').on('click', function() {
-            chooseAndDisplayCard(data, keys);
+            chooseAndDisplayCard(new State(data, keys));
         });
         $('#next-btn').click();
     });
