@@ -2,19 +2,32 @@
 const SHEETS_API_KEY = 'AIzaSyDTA94TIL0ajcLOkBbsIdKKZ7IqambgVWU';
 const SHEETS_API_URL = 'https://sheets.googleapis.com/$discovery/rest?version=v4';
 
+// Taken from https://javascript.info/task/shuffle
+function shuffleInPlace(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        let j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+}
+
 let State = class {
     constructor(data, keys) {
         this.data = data;
         this.keys = keys;
-        this.setNext();
+        shuffleInPlace(this.keys);
+        this._currentKeyIndex = 0;
     }
 
     setNext() {
-        this.currentKeyIndex = Math.floor(Math.random() * this.keys.length);
+        this._currentKeyIndex++;
+        if (this._currentKeyIndex >= this.keys.length) {
+            this._currentKeyIndex = 0;
+            shuffleInPlace(this.keys);
+        }
     }
 
     getCurrent() {
-        let key = this.keys[this.currentKeyIndex];
+        let key = this.keys[this._currentKeyIndex];
         let keyColumn = key[Math.floor(Math.random() * key.length)];
         let columns = this.data[key.toString()];
         return {
