@@ -15,7 +15,12 @@ let State = class {
         this.data = data;
         this.keys = keys;
         shuffleInPlace(this.keys);
-        this._currentKeyIndex = 0;
+
+        // Start the state at the end of the shuffled array. This way, if
+        // caller starts with getNext, they will get everything. If caller
+        // starts with getCurrent, they will get one "extra". But nevertheless,
+        // we will never get one "less".
+        this._currentKeyIndex = this.keys.length - 1;
     }
 
     setNext() {
